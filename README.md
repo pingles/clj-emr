@@ -2,6 +2,8 @@
 
 Clojure library to talk to Amazon's Elastic MapReduce API
 
+[![Build Status](https://travis-ci.org/pingles/clj-emr.png)](https://travis-ci.org/pingles/clj-emr)
+
 ## Usage
 
 Coming soon...
