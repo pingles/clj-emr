@@ -26,3 +26,53 @@
 
 ;; invalid hadoop version
 (expect AssertionError (job-flow-instances :hadoop-version "2.0"))
+
+
+(let [instances (job-flow-instances :hadoop-version "1.0.3"
+                                    :master {:instance-type :m1.medium}
+                                    :core   {:instance-type :m1.small
+                                             :count 20
+                                             :market :spot
+                                             :bid-price 0.5})]
+  (given instances
+         (expect #(count (.getInstanceGroups %)) 2)))
+
+(expect (not (.getKeepJobFlowAliveWhenNoSteps (job-flow-instances :keep-alive? false))))
+
+(given (job-flow-instances :keep-alive? false)
+       (expect .getKeepJobFlowAliveWhenNoSteps false))
+
+
+(given (job-flow "test flow"
+                 (job-flow-instances)
+                 []
+                 :log-uri "bucket/test-path")
+       (expect .getName "test flow"
+               .getLogUri "bucket/test-path"
+               .getAmiVersion "2.3"
+               .getVisibleToAllUsers false))
+
+(expect AssertionError (job-flow "testing" (job-flow-instances) [] :ami-version "pingles"))
+
+
+;; jar setup
+(given (jar-config "bucket/my.jar")
+       (expect .getJar "bucket/my.jar"
+               .getArgs empty?
+               .getProperties empty?))
+
+(given (jar-config "bucket/my.jar" :args ["-Xmx1G"] :properties {"some.prop" "val"
+                                                                 "another.prop" "val"})
+       (expect .getArgs ["-Xmx1G"]
+               #(count (.getProperties %)) 2))
+
+(given (jar-config "bucket/my.jar" :main-class "some.Class")
+       (expect .getMainClass "some.Class"))
+
+(given (jar-config "bucket/my.jar" :main-class Object)
+       (expect .getMainClass "java.lang.Object"))
+
+
+(given (step "first step" (jar-config "bucket/my.jar" :main-class "hello.World"))
+       (expect .getName "first step"
+               .getActionOnFailure "TERMINATE_JOB_FLOW"))

@@ -1,7 +1,7 @@
 (ns clj-emr.core
   (:import [com.amazonaws.auth BasicAWSCredentials]
            [com.amazonaws.services.elasticmapreduce AmazonElasticMapReduceClient]
-           [com.amazonaws.services.elasticmapreduce.model InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType]))
+           [com.amazonaws.services.elasticmapreduce.model RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure]))
 
 (def ^{:dynamic true} *instance-types* #{:m1.small
                                          :m1.medium
@@ -29,17 +29,11 @@
   [credentials]
   (AmazonElasticMapReduceClient. credentials))
 
+(def instance-role {:core (InstanceRoleType/CORE)
+                    :master (InstanceRoleType/MASTER)})
 
-(defn instance-role
-  "role:  #{:core :master}"
-  [role]
-  (cond (= role :core) (InstanceRoleType/CORE)
-        (= role :master) (InstanceRoleType/MASTER)))
-
-(defn market-type
-  [type]
-  (cond (= type :spot) (MarketType/SPOT)
-        (= type :on-demand) (MarketType/ON_DEMAND)))
+(def market-type {:spot (MarketType/SPOT)
+                  :on-demand (MarketType/ON_DEMAND)})
 
 (defn spot-price-valid?
   [market bid]
@@ -74,13 +68,61 @@
 (defn job-flow-instances
   "key-name      : ec2 keypair name to allow clients to ssh to nodes
    hadoop-version: which hadoop version
-   instances     : number of instances in cluster"
-  [& {:keys [hadoop-version key-name instances]
-      :or   {hadoop-version "1.0.3"}}]
+   master        : config map for master role. see instance-group-config
+   core          : config map for core nodes. see instance-group-config"
+  [& {:keys [hadoop-version key-name master core keep-alive?]
+      :or   {hadoop-version "1.0.3"
+             keep-alive?     false}}]
   {:pre [(contains? *hadoop-versions* hadoop-version)]}
   (-> (JobFlowInstancesConfig. )
       (.withEc2KeyName key-name)
-      (.withHadoopVersion hadoop-version)))
+      (.withHadoopVersion hadoop-version)
+      (.withKeepJobFlowAliveWhenNoSteps keep-alive?)
+      (.withInstanceGroups [(instance-group-config master) (instance-group-config core)])))
+
+(defn- key-vals
+  "Converts an associative structure to a collection of KeyValue"
+  [m]
+  (map (fn [[key val]] (KeyValue. key val))
+       m))
+
+(defmulti class-name class)
+(defmethod class-name nil [_])
+(defmethod class-name String [x] x)
+(defmethod class-name Class [x] (.getName x))
+
+(defn jar-config
+  [jar-path & {:keys [args main-class properties]}]
+  (doto (HadoopJarStepConfig. jar-path)
+    (.withArgs args)
+    (.withProperties (key-vals properties))
+    (.withMainClass (class-name main-class))))
+
+(def action-on-failure {:cancel-and-wait (ActionOnFailure/CANCEL_AND_WAIT)
+                        :continue (ActionOnFailure/CONTINUE)
+                        :terminate-flow (ActionOnFailure/TERMINATE_JOB_FLOW)})
+
+(defn step
+  "name      : name for the step
+   jar-config: job jar config, see jar-config."
+  [name jar-config & {:keys [on-failure]
+                      :or   {on-failure :terminate-flow}}]
+  (doto (StepConfig. name jar-config)
+    (.withActionOnFailure (action-on-failure on-failure))))
+
+(defn steps
+  [])
+
+(def ^{:dynamic true} *ami-versions* #{"2.3" "2.2" "2.1" "2.0" "1.0"})
 
 (defn job-flow
-  [name instance-config])
+  "name     : name the job
+   instances: job flow instance config, see job-flow-instances"
+  [name instances steps & {:keys [log-uri ami-version visible-to-all?]
+                           :or   {ami-version "2.3"
+                                  visible-to-all? false}}]
+  {:pre [(contains? *ami-versions* ami-version)]}
+  (doto (RunJobFlowRequest. name instances)
+    (.withLogUri log-uri)
+    (.withAmiVersion ami-version)
+    (.withVisibleToAllUsers visible-to-all?)))
