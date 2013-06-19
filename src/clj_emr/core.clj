@@ -110,9 +110,6 @@
   (doto (StepConfig. name jar-config)
     (.withActionOnFailure (action-on-failure on-failure))))
 
-(defn steps
-  [])
-
 (def ^{:dynamic true} *ami-versions* #{"2.3" "2.2" "2.1" "2.0" "1.0"})
 
 (defn job-flow
@@ -125,4 +122,5 @@
   (doto (RunJobFlowRequest. name instances)
     (.withLogUri log-uri)
     (.withAmiVersion ami-version)
-    (.withVisibleToAllUsers visible-to-all?)))
+    (.withVisibleToAllUsers visible-to-all?)
+    (.withSteps steps)))

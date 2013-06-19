@@ -76,3 +76,17 @@
 (given (step "first step" (jar-config "bucket/my.jar" :main-class "hello.World"))
        (expect .getName "first step"
                .getActionOnFailure "TERMINATE_JOB_FLOW"))
+
+
+(given (job-flow "Sample flow"
+                 (job-flow-instances :hadoop-version "1.0.3"
+                                     :master {:instance-type :m1.medium
+                                              :market :on-demand}
+                                     :core   {:instance-type :m1.small
+                                              :count 20
+                                              :market :spot
+                                              :bid-price 0.5})
+                 [(step "First step"
+                        (jar-config "bucket/my.jar" :main-class "hello.World" :on-failure :cancel-and-wait))])
+       (expect .getName "Sample flow"
+               #(count (.getSteps %)) 1))
