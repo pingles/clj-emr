@@ -10,7 +10,7 @@
        (expect .getInstanceRole "CORE"
                .getMarket "ON_DEMAND"
                .getInstanceCount 1
-               .getBidPrice ""))
+               .getBidPrice nil))
 
 (given (instance-group-config :task :market :spot :bid-price 0.5)
        (expect .getInstanceRole "TASK"
@@ -25,30 +25,31 @@
 (given (instance-group-config :core :market :spot :bid-price 0.5)
        (expect .getBidPrice "0.5"))
 
-(given (job-flow-instances :hadoop-version "1.0.3")
+(given (job-flow-instances [] :hadoop-version "1.0.3")
        (expect .getHadoopVersion "1.0.3"))
 
 ;; invalid hadoop version
-(expect AssertionError (job-flow-instances :hadoop-version "2.0"))
+(expect AssertionError (job-flow-instances [] :hadoop-version "2.0"))
 
 
-(let [instances (job-flow-instances :hadoop-version "1.0.3"
-                                    :master {:instance-type :m1.medium}
-                                    :core   {:instance-type :m1.small
-                                             :count 20
-                                             :market :spot
-                                             :bid-price 0.5})]
+(let [instances (job-flow-instances [(instance-group-config :master :instance-type :m1.medium)
+                                     (instance-group-config :core
+                                                            :instance-type :m1.small
+                                                            :count 20
+                                                            :market :spot
+                                                            :bid-price 0.5)]
+                                    :hadoop-version "1.0.3")]
   (given instances
          (expect #(count (.getInstanceGroups %)) 2)))
 
-(expect (not (.getKeepJobFlowAliveWhenNoSteps (job-flow-instances :keep-alive? false))))
+(expect (not (.getKeepJobFlowAliveWhenNoSteps (job-flow-instances [] :keep-alive? false))))
 
-(given (job-flow-instances :keep-alive? false)
+(given (job-flow-instances [] :keep-alive? false)
        (expect .getKeepJobFlowAliveWhenNoSteps false))
 
 
 (given (job-flow "test flow"
-                 (job-flow-instances)
+                 (job-flow-instances [])
                  []
                  :log-uri "bucket/test-path")
        (expect .getName "test flow"
@@ -56,7 +57,7 @@
                .getAmiVersion "2.3"
                .getVisibleToAllUsers false))
 
-(expect AssertionError (job-flow "testing" (job-flow-instances) [] :ami-version "pingles"))
+(expect AssertionError (job-flow "testing" (job-flow-instances []) [] :ami-version "pingles"))
 
 
 ;; jar setup
@@ -83,16 +84,19 @@
 
 
 (given (job-flow "Sample flow"
-                 (job-flow-instances :hadoop-version "1.0.3"
-                                     :master {:instance-type :m1.medium
-                                              :market :on-demand}
-                                     :core   {:instance-type :m1.small
-                                              :market :on-demand
-                                              :count 5}
-                                     :task   {:instance-type :m1.small
-                                              :count 20
-                                              :market :spot
-                                              :bid-price 0.5})
+                 (job-flow-instances [(instance-group-config :master
+                                                             :instance-type :m1.medium
+                                                             :market :on-demand)
+                                      (instance-group-config :core
+                                                             :instance-type :m1.small
+                                                             :market :on-demand
+                                                             :count 5)
+                                      (instance-group-config :task
+                                                             :instance-type :m1.small
+                                                             :count 20
+                                                             :market :spot
+                                                             :bid-price 0.5)]
+                                     :hadoop-version "1.0.3")
                  [(step "First step"
                         (jar-config "bucket/my.jar"
                                     :main-class "hello.World"
@@ -100,3 +104,7 @@
                                     :on-failure :cancel-and-wait))])
        (expect .getName "Sample flow"
                #(count (.getSteps %)) 1))
+
+
+(expect AssertionError (client (credentials "" "") :region :pingles))
+(expect (client (credentials "" "") :region :eu-west-1))

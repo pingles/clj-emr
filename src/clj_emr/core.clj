@@ -25,9 +25,21 @@
   [access-key secret-key]
   (BasicAWSCredentials. access-key secret-key))
 
+(def ^{:dynamic true} *endpoints* {:us-east-1 "elasticmapreduce.us-east-1.amazonaws.com"
+                                   :us-west-2 "elasticmapreduce.us-west-2.amazonaws.com"
+                                   :us-west-1 "elasticmapreduce.us-west-1.amazonaws.com"
+                                   :eu-west-1 "elasticmapreduce.eu-west-1.amazonaws.com"
+                                   :ap-southeast-1 "elasticmapreduce.ap-southeast-1.amazonaws.com"
+                                   :ap-southeast-2 "elasticmapreduce.ap-southeast-2.amazonaws.com"
+                                   :ap-northeast-1 "elasticmapreduce.ap-northeast-1.amazonaws.com"
+                                   :sa-east-1 "elasticmapreduce.sa-east-1.amazonaws.com"})
+
 (defn client
-  [credentials]
-  (AmazonElasticMapReduceClient. credentials))
+  [credentials & {:keys [region]
+                  :or   {region :us-east-1}}]
+  {:pre [(contains? *endpoints* region)]}
+  (doto (AmazonElasticMapReduceClient. credentials)
+    (.setEndpoint (region *endpoints*))))
 
 (def instance-role {:core (InstanceRoleType/CORE)
                     :master (InstanceRoleType/MASTER)
@@ -62,7 +74,8 @@
     (.withInstanceType (name instance-type))
     (.withMarket (market-type market))
     (.withInstanceCount (Integer/valueOf count))
-    (.withBidPrice (str bid-price))))
+    (.withBidPrice (when bid-price
+                     (str bid-price)))))
 
 (def ^{:dynamic true} *hadoop-versions* #{"1.0.3" "0.20.205" "0.20" "0.18"})
 
@@ -70,16 +83,17 @@
   "key-name      : ec2 keypair name to allow clients to ssh to nodes
    hadoop-version: which hadoop version
    master        : config map for master role. see instance-group-config
-   core          : config map for core nodes. see instance-group-config"
-  [& {:keys [hadoop-version key-name master core keep-alive?]
-      :or   {hadoop-version "1.0.3"
-             keep-alive?     false}}]
+   core          : config map for core nodes. see instance-group-config
+   task          : config for task nodes"
+  [instances & {:keys [hadoop-version key-name keep-alive?]
+                :or   {hadoop-version "1.0.3"
+                       keep-alive?     false}}]
   {:pre [(contains? *hadoop-versions* hadoop-version)]}
   (-> (JobFlowInstancesConfig. )
       (.withEc2KeyName key-name)
       (.withHadoopVersion hadoop-version)
       (.withKeepJobFlowAliveWhenNoSteps keep-alive?)
-      (.withInstanceGroups [(instance-group-config master) (instance-group-config core)])))
+      (.withInstanceGroups instances)))
 
 (defn- key-vals
   "Converts an associative structure to a collection of KeyValue"
@@ -125,3 +139,10 @@
     (.withAmiVersion ami-version)
     (.withVisibleToAllUsers visible-to-all?)
     (.withSteps steps)))
+
+
+
+(defn run
+  "Creates and starts running the job flow"
+  [client job-flow]
+  (.runJobFlow client job-flow))
