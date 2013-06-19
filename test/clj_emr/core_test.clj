@@ -12,6 +12,10 @@
                .getInstanceCount 1
                .getBidPrice ""))
 
+(given (instance-group-config :task :market :spot :bid-price 0.5)
+       (expect .getInstanceRole "TASK"
+               .getMarket "SPOT"))
+
 ;; m1.pingles is not a valid ec2 instance type... yet ;)
 (expect AssertionError (instance-group-config :core :instance-type :m1.pingles))
 
@@ -83,10 +87,16 @@
                                      :master {:instance-type :m1.medium
                                               :market :on-demand}
                                      :core   {:instance-type :m1.small
+                                              :market :on-demand
+                                              :count 5}
+                                     :task   {:instance-type :m1.small
                                               :count 20
                                               :market :spot
                                               :bid-price 0.5})
                  [(step "First step"
-                        (jar-config "bucket/my.jar" :main-class "hello.World" :on-failure :cancel-and-wait))])
+                        (jar-config "bucket/my.jar"
+                                    :main-class "hello.World"
+                                    :args ["-input" "/path" "-output" "-path"]
+                                    :on-failure :cancel-and-wait))])
        (expect .getName "Sample flow"
                #(count (.getSteps %)) 1))

@@ -30,7 +30,8 @@
   (AmazonElasticMapReduceClient. credentials))
 
 (def instance-role {:core (InstanceRoleType/CORE)
-                    :master (InstanceRoleType/MASTER)})
+                    :master (InstanceRoleType/MASTER)
+                    :task (InstanceRoleType/TASK)})
 
 (def market-type {:spot (MarketType/SPOT)
                   :on-demand (MarketType/ON_DEMAND)})
