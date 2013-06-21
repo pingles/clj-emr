@@ -14,9 +14,6 @@
                                          :c1.medium
                                          :c1.xlarge
                                          :cc2.8xlarge
-                                         :m3.xlarge
-                                         :m3.2xlarge
-                                         :c1.xlarge
                                          :hi1.4xlarge})
 
 (defn credentials
