@@ -1,7 +1,8 @@
 (ns clj-emr.core
   (:import [com.amazonaws.auth BasicAWSCredentials]
            [com.amazonaws.services.elasticmapreduce AmazonElasticMapReduceClient]
-           [com.amazonaws.services.elasticmapreduce.model RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure]))
+           [com.amazonaws.services.elasticmapreduce.model RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure TerminateJobFlowsRequest DescribeJobFlowsRequest])
+  (:use [clojure.java.data :only (from-java)]))
 
 (def ^{:dynamic true} *instance-types* #{:m1.small
                                          :m1.medium
@@ -145,4 +146,14 @@
 (defn run
   "Creates and starts running the job flow"
   [client job-flow]
-  (.runJobFlow client job-flow))
+  (let [result (.runJobFlow client job-flow)]
+    {:flow-id (.getJobFlowId result)}))
+
+(defn terminate
+  [client & flow-ids]
+  (.terminateJobFlows client (TerminateJobFlowsRequest. flow-ids)))
+
+(defn describe
+  "Describe the Job Flows specified"
+  [client & flow-ids]
+  (from-java (.describeJobFlows client (DescribeJobFlowsRequest. flow-ids))))
