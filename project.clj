@@ -1,4 +1,4 @@
-(defproject clj-emr "0.1.0"
+(defproject clj-emr "0.1.1"
   :description "Clojure library to control Amazon Elastic MapReduce"
   :url "http://github.com/pingles/clj-emr"
   :license {:name "Eclipse Public License"
