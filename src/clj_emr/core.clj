@@ -2,7 +2,7 @@
   (:import [com.amazonaws.auth BasicAWSCredentials]
            [com.amazonaws.services.elasticmapreduce AmazonElasticMapReduceClient]
            [com.amazonaws.services.elasticmapreduce.model RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure TerminateJobFlowsRequest DescribeJobFlowsRequest])
-  (:use [clojure.java.data :only (from-java)]))
+  (:require [clojure.string :as s]))
 
 (def ^{:dynamic true} *instance-types* #{:m1.small
                                          :m1.medium
@@ -153,7 +153,28 @@
   [client & flow-ids]
   (.terminateJobFlows client (TerminateJobFlowsRequest. flow-ids)))
 
+(defn state
+  [str]
+  (-> str (s/lower-case) (s/replace #"_" "-") (keyword)))
+
+(defn execution-status
+  "state: #{:completed, :failed, :terminated, :running, :shutting-down, :starting, :waiting, :bootstrapping}"
+  [status-detail]
+  {:creation-date-time (.getCreationDateTime status-detail)
+   :start-date-time (.getStartDateTime status-detail)
+   :end-date-time (.getEndDateTime status-detail)
+   :last-change-reason (.getLastStateChangeReason status-detail)
+   :state (state (.getState status-detail))})
+
+(defn job-flow-detail
+  [job-flow-detail]
+  {:name (.getName job-flow-detail)
+   :ami-version (.getAmiVersion job-flow-detail)
+   :log-uri (.getLogUri job-flow-detail)
+   :status (execution-status (.getExecutionStatusDetail job-flow-detail))})
+
 (defn describe
   "Describe the Job Flows specified"
   [client & flow-ids]
-  (from-java (.describeJobFlows client (DescribeJobFlowsRequest. flow-ids))))
+  (let [result (.describeJobFlows client (DescribeJobFlowsRequest. flow-ids))]
+    {:flows (map job-flow-detail (.getJobFlows result))}))
