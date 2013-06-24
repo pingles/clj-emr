@@ -1,7 +1,7 @@
 (ns clj-emr.core
   (:import [com.amazonaws.auth BasicAWSCredentials]
            [com.amazonaws.services.elasticmapreduce AmazonElasticMapReduceClient]
-           [com.amazonaws.services.elasticmapreduce.model AddJobFlowStepsRequest RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure TerminateJobFlowsRequest DescribeJobFlowsRequest])
+           [com.amazonaws.services.elasticmapreduce.model ModifyInstanceGroupsRequest AddInstanceGroupsRequest AddJobFlowStepsRequest RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure TerminateJobFlowsRequest DescribeJobFlowsRequest])
   (:require [clojure.string :as s]))
 
 (def ^{:dynamic true} *instance-types* #{:m1.small
@@ -180,3 +180,8 @@
   "steps: see clj-emr.core/step"
   [client flow-id & steps]
   (.addJobFlowSteps client (AddJobFlowStepsRequest. flow-id steps)))
+
+(defn add-instance-groups
+  "Add more instance groups to a running flow"
+  [client flow-id & instance-groups]
+  (.addInstanceGroups client (AddInstanceGroupsRequest. instance-groups flow-id)))
