@@ -118,6 +118,7 @@
    jar-config: job jar config, see jar-config."
   [name jar-config & {:keys [on-failure]
                       :or   {on-failure :terminate-flow}}]
+  {:pre [(contains? action-on-failure on-failure)]}
   (doto (StepConfig. name jar-config)
     (.withActionOnFailure (action-on-failure on-failure))))
 

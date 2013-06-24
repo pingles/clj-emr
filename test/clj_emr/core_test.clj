@@ -84,6 +84,10 @@
        (expect .getName "first step"
                .getActionOnFailure "TERMINATE_JOB_FLOW"))
 
+(given (step "wait" (jar-config "some.jar") :on-failure :cancel-and-wait)
+       (expect .getActionOnFailure "CANCEL_AND_WAIT"))
+
+(expect AssertionError (step "blah" (jar-config "some.jar") :on-failure :bad-value))
 
 (given (job-flow "Sample flow"
                  (job-flow-instances [(instance-group-config :master
