@@ -66,6 +66,8 @@
                .getArgs empty?
                .getProperties empty?))
 
+(expect AssertionError (jar-config "some.jar" :args "needs to be a vector"))
+
 (given (jar-config "bucket/my.jar" :args ["-Xmx1G"] :properties {"some.prop" "val"
                                                                  "another.prop" "val"})
        (expect .getArgs ["-Xmx1G"]
