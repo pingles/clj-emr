@@ -102,8 +102,9 @@
 (defmethod class-name Class [x] (.getName x))
 
 (defn jar-config
-  [jar-path & {:keys [args main-class properties]}]
-  {:pre [(or (nil? args) (coll? args))]}
+  [jar-path & {:keys [args main-class properties]
+               :or   {args []}}]
+  {:pre [(coll? args)]}
   (doto (HadoopJarStepConfig. jar-path)
     (.withArgs args)
     (.withProperties (key-vals properties))
