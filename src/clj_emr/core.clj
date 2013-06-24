@@ -1,7 +1,7 @@
 (ns clj-emr.core
   (:import [com.amazonaws.auth BasicAWSCredentials]
            [com.amazonaws.services.elasticmapreduce AmazonElasticMapReduceClient]
-           [com.amazonaws.services.elasticmapreduce.model ModifyInstanceGroupsRequest AddInstanceGroupsRequest AddJobFlowStepsRequest RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure TerminateJobFlowsRequest DescribeJobFlowsRequest])
+           [com.amazonaws.services.elasticmapreduce.model InstanceGroupModifyConfig ModifyInstanceGroupsRequest AddInstanceGroupsRequest AddJobFlowStepsRequest RunJobFlowRequest InstanceGroupConfig JobFlowInstancesConfig InstanceRoleType MarketType StepConfig HadoopJarStepConfig KeyValue ActionOnFailure TerminateJobFlowsRequest DescribeJobFlowsRequest])
   (:require [clojure.string :as s]))
 
 (def ^{:dynamic true} *instance-types* #{:m1.small
@@ -185,3 +185,13 @@
   "Add more instance groups to a running flow"
   [client flow-id & instance-groups]
   (.addInstanceGroups client (AddInstanceGroupsRequest. instance-groups flow-id)))
+
+(defn modify-instance-groups
+  "group-config is a map of instance groups and the number
+   of instances desired. e.g.
+   (modify-instance-groups client {\"ig-xxx\" 20})"
+  [client group-config]
+  (letfn [(modify-group-config [[instance-group-id count]]
+            (InstanceGroupModifyConfig. instance-group-id (Integer/valueOf count)))]
+    (let [req (ModifyInstanceGroupsRequest. (map modify-group-config group-config))]
+      (.modifyInstanceGroups client req))))
