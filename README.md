@@ -11,6 +11,7 @@ Clojure library to talk to Amazon's Elastic MapReduce API
   (:use [clj-emr.core]))
 
 (def c (client (credentials access-key secret-key) :region :eu-west-1))
+(def jar {:url "s3n://jobs-bucket/my-job.jar" :class "hello.World"})
 
 (def flow (job-flow "My EMR flow"
                     (job-flow-instances [(instance-group-config :master
@@ -26,8 +27,8 @@ Clojure library to talk to Amazon's Elastic MapReduce API
                                                                 :market :spot
                                                                 :bid-price 0.5)])
                     [(step "First step"
-                           (jar-config "s3n://jobs-bucket/my-job.jar"
-                                       :main-class "hello.World"
+                           (jar-config (:url jar)
+                                       :main-class (:class jar)
                                        :args ["s3n://input-data/*" "s3n://output-data"]
                                        :on-failure :terminate-flow))]))
 
