@@ -163,12 +163,24 @@
    :last-change-reason (.getLastStateChangeReason status-detail)
    :state (state (.getState status-detail))})
 
+(defn- instances-detail
+  [instances-detail]
+  {:ec2-keyname (.getEc2KeyName instances-detail)
+   :hadoop-version (.getHadoopVersion instances-detail)
+   :instance-count (.getInstanceCount instances-detail)
+   :master {:instance-id (.getMasterInstanceId instances-detail)
+            :type (.getMasterInstanceType instances-detail)
+            :public-dns (.getMasterPublicDnsName instances-detail)}
+   :slaves {:type (.getSlaveInstanceType instances-detail)}
+   :normalized-hours (.getNormalizedInstanceHours instances-detail)})
+
 (defn job-flow-detail
   [job-flow-detail]
   {:name (.getName job-flow-detail)
    :ami-version (.getAmiVersion job-flow-detail)
    :log-uri (.getLogUri job-flow-detail)
-   :status (execution-status (.getExecutionStatusDetail job-flow-detail))})
+   :status (execution-status (.getExecutionStatusDetail job-flow-detail))
+   :instances (instances-detail (.getInstances job-flow-detail))})
 
 (defn describe
   "Describe the Job Flows specified"
