@@ -72,7 +72,7 @@
     (.withBidPrice (when bid-price
                      (str bid-price)))))
 
-(def ^{:dynamic true} *hadoop-versions* #{"1.0.3" "0.20.205" "0.20" "0.18"})
+(def ^{:dynamic true} *hadoop-versions* #{"2.2.0" "1.0.3" "0.20.205" "0.20" "0.18"})
 
 (defn job-flow-instances
   "key-name      : ec2 keypair name to allow clients to ssh to nodes
@@ -123,7 +123,7 @@
   (doto (StepConfig. name jar-config)
     (.withActionOnFailure (action-on-failure on-failure))))
 
-(def ^{:dynamic true} *ami-versions* #{"2.3" "2.2" "2.1" "2.0" "1.0"})
+(def ^{:dynamic true} *ami-versions* #{"3.0.2" "3.0.1" "3.0.0" "2.4.2" "2.4.1" "2.4" "2.3.6" "2.3.5" "2.3.3" "2.3.2" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.0"})
 
 (defn job-flow
   "name     : name the job
